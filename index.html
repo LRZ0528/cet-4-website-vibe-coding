@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>四级单词查询站</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">📚</span>
+      <h1>四级单词查询站</h1>
+    </div>
+    <div class="topbar-right">
+      <button class="study-btn-top" id="studyBtnTop" onclick="goStudy()" title="开始背单词">
+        🎯 背单词
+      </button>
+      <button class="vocab-btn" id="vocabBtn" onclick="goVocabulary()">
+        📖 单词本 <span class="vocab-count" id="vocabCount">0</span>
+      </button>
+      <div class="stats" id="stats">词表加载中…</div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- 搜索区 -->
+    <section class="search-section">
+      <div class="search-box">
+        <input
+          id="searchInput"
+          type="search"
+          placeholder="输入单词、中文释义或拼写片段…（回车或点搜索）"
+          autocomplete="off"
+          autofocus
+        />
+        <button id="searchBtn" class="search-btn" type="button">搜索</button>
+        <span class="search-hint" id="searchHint"></span>
+      </div>
+    </section>
+
+    <!-- 字母索引 -->
+    <section class="alphabet" id="alphabet"></section>
+
+    <!-- 收藏栏（顶部快捷入口） -->
+    <section class="fav-bar" id="favBar"><span class="fav-empty">还没有加入单词本的词 ☆</span></section>
+
+    <!-- 主页：列表 + 详情 -->
+    <section class="main-grid" id="mainGrid">
+      <aside class="result-list" id="resultList">
+        <div class="empty-tip">输入任意字母/词/中文开始搜索 ✨</div>
+      </aside>
+      <article class="detail-panel" id="detailPanel">
+        <div class="detail-back-row">
+          <button class="back-btn" id="backBtn" onclick="goBackToList()">
+            <span class="back-arrow">←</span>
+            <span class="back-text">返回列表</span>
+          </button>
+        </div>
+        <div class="detail-content" id="detailContent">
+          <div class="empty-tip">👈 在左侧选中一个词查看详情</div>
+        </div>
+      </article>
+    </section>
+
+    <!-- 单词本独立页面 -->
+    <section class="vocab-page" id="vocabPage" style="display:none">
+      <button class="vocab-back" onclick="goHome()">
+        <span class="vocab-back-arrow">←</span>
+        <span>返回主页</span>
+      </button>
+      <div class="vocab-header">
+        <h2>📖 我的单词本</h2>
+        <div class="vocab-stats" id="vocabStats"></div>
+      </div>
+      <div class="vocab-tabs" id="vocabTabs">
+        <button class="vocab-tab active" data-filter="none" onclick="setVocabFilter('none')">
+          ⚪ 未掌握 <span class="vocab-tab-count" id="vocabCountNone">0</span>
+        </button>
+        <button class="vocab-tab" data-filter="partial" onclick="setVocabFilter('partial')">
+          🟡 大致掌握 <span class="vocab-tab-count" id="vocabCountPartial">0</span>
+        </button>
+        <button class="vocab-tab" data-filter="mastered" onclick="setVocabFilter('mastered')">
+          🟢 完全掌握 <span class="vocab-tab-count" id="vocabCountMastered">0</span>
+        </button>
+      </div>
+      <div class="vocab-list" id="vocabList"></div>
+    </section>
+
+    <!-- 学习卡片页 -->
+    <section class="study-page" id="studyPage" style="display:none">
+      <div class="study-header">
+        <div class="study-progress">
+          <span id="studyProgress">0 / 0</span>
+          <div class="study-bar"><div class="study-bar-fill" id="studyBarFill"></div></div>
+        </div>
+        <button class="study-quit" id="studyQuit" onclick="quitSession()" aria-label="退出" title="退出本次学习">
+          ✕
+        </button>
+      </div>
+      <div class="study-card" id="studyCard">
+        <div class="study-word" id="studyWord">—</div>
+        <div class="study-hint" id="studyHint"></div>
+      </div>
+      <div class="study-actions">
+        <div class="study-row study-row-top">
+          <button class="study-act study-detail" onclick="studyViewDetail()">
+            👁 查看详情
+          </button>
+          <button class="study-act study-prev" id="studyPrev" onclick="prevWord()">
+            ← 上一个
+          </button>
+        </div>
+        <div class="study-mastery-row" id="studyMasteryRow">
+          <button class="study-act study-m-btn" data-target="none" onclick="setStudyMastery('none')">⚪ 未掌握</button>
+          <button class="study-act study-m-btn" data-target="partial" onclick="setStudyMastery('partial')">🟡 大致掌握</button>
+          <button class="study-act study-m-btn" data-target="mastered" onclick="setStudyMastery('mastered')">🟢 完全掌握</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 学习中的单词详情页（独立二级页面，区别于主页的 #word=xxx） -->
+    <section class="study-detail-page" id="studyDetailPage" style="display:none">
+      <div class="study-detail-header">
+        <button class="study-detail-back" id="studyDetailBack" onclick="backToStudy()">
+          <span class="back-arrow">←</span>
+          <span class="back-text">返回</span>
+        </button>
+      </div>
+      <div class="study-detail-content" id="studyDetailContent"></div>
+    </section>
+
+    <!-- 学习完成页 -->
+    <section class="study-done-page" id="studyDonePage" style="display:none">
+      <button class="vocab-back" onclick="goHome()">
+        <span class="vocab-back-arrow">←</span>
+        <span>返回主页</span>
+      </button>
+      <div class="done-content">
+        <div class="done-icon">🎉</div>
+        <h2>任务完成</h2>
+        <div class="done-stats" id="doneStats"></div>
+        <button class="study-act study-next" onclick="goHome()" style="margin-top:24px;max-width:240px">
+          返回主页
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- 弹窗：询问数量 -->
+  <div class="modal-mask" id="askNModal" style="display:none" onclick="if(event.target===this)cancelAskN()">
+    <div class="modal-box">
+      <h3>🎯 开始背单词</h3>
+      <p>本次要背多少个？</p>
+      <input type="number" id="askNInput" min="1" max="100" value="10" autofocus />
+      <div class="modal-actions">
+        <button class="modal-btn cancel" onclick="cancelAskN()">取消</button>
+        <button class="modal-btn primary" onclick="confirmAskN()">开始</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 弹窗：退出确认 -->
+  <div class="modal-mask" id="quitModal" style="display:none" onclick="if(event.target===this)cancelQuit()">
+    <div class="modal-box">
+      <h3>⏸ 退出本次学习？</h3>
+      <p id="quitHint"></p>
+      <div class="modal-actions vertical">
+        <button class="modal-btn primary" onclick="quitSave()">💾 保存进度，下次继续</button>
+        <button class="modal-btn danger" onclick="quitDiscard()">🗑 放弃本次</button>
+        <button class="modal-btn cancel" onclick="cancelQuit()">继续学习</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <span>纯静态站点 · Fuse.js 模糊搜索 · localStorage 学习数据</span>
+    <span id="apiStatus"></span>
+  </footer>
+
+  <!-- Fuse.js（本地副本，24KB） -->
+  <script defer src="./fuse.min.js?v=26"></script>
+  <!-- 词表数据 -->
+  <script defer src="./data.js?v=26"></script>
+  <!-- 应用主逻辑 -->
+  <script defer src="./app.js?v=26"></script>
+</body>
+</html>
